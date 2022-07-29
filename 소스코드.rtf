@@ -1,0 +1,224 @@
+{\rtf1\ansi\ansicpg949\cocoartf1561\cocoasubrtf600
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 import processing.video.*;\
+\
+int onePoint = 1;\
+int iRate = 240;\
+int kx = 300, ky = 300;\
+int xMove[] = \{0\};\
+int yMove[] = \{0\};\
+\
+Capture cam;\
+PImage imgCam;\
+PImage capImg;\
+\
+float r = 230;\
+float g = 230;\
+float b = 0;\
+color p;\
+\
+// button\
+int maxButton = 10;\
+String sButton[] = \{ "+", "-", "+", "-", "+", "-", ">", "<", "v", "^" \};\
+int xButton[] = \{ 0, 30, 0, 30, 0, 30, 0, 30, 0, 30 \};\
+int yButton[] = \{ 0, 0, 30, 30, 60, 60, 90, 90, 120, 120 \};\
+int wButton = 30;\
+int hButton = 30;\
+\
+void setup()\
+\{\
+    size(1280,720);\
+    frameRate(iRate);\
+\
+    cam = new Capture(this, width, height);\
+    cam.start();\
+\}\
+\
+void addMove(int x, int y)\
+\{\
+    xMove[onePoint-1] = x;\
+    yMove[onePoint-1] = y;\
+\}\
+\
+void draw() \
+\{\
+    if (cam.available()) \
+    \{ \
+        cam.read();\
+        imgCam = flip_image(cam);\
+        image(imgCam, 0, 0);\
+\
+        int px = -100;\
+        int py = -100;\
+        float tollerence= 64;\
+        imgCam.loadPixels();\
+        \
+        //\
+        for (int i = 0; i < width; i++)\
+        \{\
+            for (int j = 0; j < height; j++)\
+            \{\
+                p = imgCam.get(i, j);\
+                //distinguish the color\
+                float t = abs(r - red(p)) + abs(g - green(p)) + abs(b - blue(p));\
+                if (tollerence > t)\
+                \{\
+                    tollerence = t;\
+                    px = i;\
+                    py = j;\
+                \}\
+            \}\
+        \}\
+\
+        if (px >= 0 && py >= 0) addMove(px, py);\
+\
+        noFill();\
+        stroke(255);\
+        strokeWeight(4);\
+        \
+        //draw the circle which is a standard\
+        ellipse(map(kx, 0, width, 0, width), map(ky, 0, height, 0, height), 50, 50);\
+        \
+        for (int i = 0; i < onePoint; i++)\
+        \{\
+            if (xMove[i] >= 0 && yMove[i] >= 0)\
+            //draw a circle which follows the color\
+                ellipse(map(xMove[i], 0, width, 0, width), map(yMove[i], 0, height, 0, height), 30, 30);\
+        \}\
+\
+        println(tollerence);\
+    \}\
+    \
+    float m1 = map(xMove[0], 0, width, 0, width), m2 = map(yMove[0], 0, height, 0, height);\
+    float k1 = map(kx, 0, width, 0, width), k2 = map(ky, 0, height, 0, height);\
+    \
+    if(((m1 >= k1 - 10) && (m1 <= k1 + 10)) && ((m2 >= k2 - 10) && (m2 <= k2 + 10)))\
+    \{\
+      //capture the screen\
+        save("captured/screenCapture.jpg");\
+    \}\
+\
+    fill(255);\
+    strokeWeight(1);\
+    drawButton();\
+    drawColorScreen();\
+    \
+    //show the captured image on the screen\
+    capImg = loadImage("captured/screenCapture.jpg");\
+    image(capImg, width - 400, height - 250, 400, 250);\
+\
+\}\
+\
+PImage flip_image(PImage b) // flip elft and right of image\
+\{\
+    PImage temp_pic = createImage(b.width, b.height, RGB); // create empty image\
+    temp_pic.loadPixels();\
+    for (int y = 0; y < b.height; y++)\
+    \{\
+        for (int x = 0; x < b.width; x++)\
+        \{\
+            temp_pic.pixels[x+b.width*y] = b.get(b.width - x, y);\
+        \}\
+    \}\
+    temp_pic.updatePixels();\
+\
+    return temp_pic;\
+\}\
+\
+void drawButton()\
+\{\
+  // make buttons \
+    for (int i = 0; i < maxButton; i++)\
+    \{\
+        stroke(0, 0, 255);\
+        fill(255);\
+        rect(xButton[i], yButton[i], wButton-1, hButton-1);\
+        fill(0);\
+        textSize(20);\
+        textAlign(CENTER, CENTER);\
+        text(sButton[i], xButton[i]+wButton/2, yButton[i]+hButton/2);\
+    \}\
+\
+    textAlign(LEFT, CENTER);\
+    text(r + " R", xButton[1]+wButton+5, yButton[1]+hButton/2);\
+    text(g + " G", xButton[3]+wButton+5, yButton[3]+hButton/2);\
+    text(b + " B", xButton[5]+wButton+5, yButton[5]+hButton/2);\
+\}\
+\
+void mousePressed()\
+\{\
+    //control rgb color\
+    if (contain(mouseX, mouseY, xButton[0], yButton[0], wButton, hButton))\
+    \{\
+        r = constrain(r+5, 0, 255);\
+        return;\
+    \}\
+    if (contain(mouseX, mouseY, xButton[1], yButton[1], wButton, hButton))\
+    \{\
+        r = constrain(r-5, 0, 255);\
+        return;\
+    \}\
+    if (contain(mouseX, mouseY, xButton[2], yButton[2], wButton, hButton))\
+    \{\
+        g = constrain(g+5, 0, 255);\
+        return;\
+    \}\
+    if (contain(mouseX, mouseY, xButton[3], yButton[3], wButton, hButton))\
+    \{\
+        g = constrain(g-5, 0, 255);\
+        return;\
+    \}\
+    if (contain(mouseX, mouseY, xButton[4], yButton[4], wButton, hButton))\
+    \{\
+        b = constrain(b+5, 0, 255);\
+        return;\
+    \}\
+    if (contain(mouseX, mouseY, xButton[5], yButton[5], wButton, hButton))\
+    \{\
+        b = constrain(b-5, 0, 255);\
+        return;\
+    \}\
+    //control location of the circle\
+    if (contain(mouseX, mouseY, xButton[6], yButton[6], wButton, hButton))\
+    \{\
+        kx = constrain(kx+5, 0, 1280);\
+        return;\
+    \}\
+    if (contain(mouseX, mouseY, xButton[7], yButton[7], wButton, hButton))\
+    \{\
+        kx = constrain(kx-5, 0, 1280);\
+        return;\
+    \}\
+    if (contain(mouseX, mouseY, xButton[8], yButton[8], wButton, hButton))\
+    \{\
+        ky = constrain(ky+5, 0, 800);\
+        return;\
+    \}\
+    if (contain(mouseX, mouseY, xButton[9], yButton[9], wButton, hButton))\
+    \{\
+        ky = constrain(ky-5, 0, 800);\
+        return;\
+    \}\
+\}\
+\
+void drawColorScreen()\
+\{\
+  //show the setted color ont the screen\
+   stroke(0, 0, 255); \
+   fill(r,g,b);\
+   rect(0, 200, 50, 50);\
+\}\
+\
+boolean contain(int x, int y, int x1, int y1, int w1, int h1)\
+\{\
+    if (x1 <= x && x <= (x1 + w1))\
+        if (y1 <= y && y <= (y1 + h1))\
+            return(true);\
+\
+    return(false);\
+\}}
